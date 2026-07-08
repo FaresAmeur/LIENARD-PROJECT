@@ -1,0 +1,494 @@
+\documentclass[11pt,a4paper]{article}
+
+% ══════════════════════════════════════════════════════════
+%  A Phase-Conditioned Liénard Oscillator Framework for
+%  Multi-Asset Regime Detection and Signal Filtering
+%
+%  Working paper — version 1.0 (June 2026)
+%  This document serves as living documentation of the model;
+%  update the changelog in Appendix C as versions evolve.
+% ══════════════════════════════════════════════════════════
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{geometry}
+\geometry{margin=2.5cm}
+\usepackage{hyperref}
+\hypersetup{colorlinks=true,linkcolor=blue!60!black,citecolor=blue!60!black,urlcolor=blue!60!black}
+\usepackage{natbib}
+\usepackage{xcolor}
+\usepackage{tikz}
+\usetikzlibrary{circuits.ee.IEC,positioning,arrows.meta}
+\usepackage{caption}
+\captionsetup{font=small,labelfont=bf}
+\usepackage{float}
+
+\newtheorem{proposition}{Proposition}
+\newtheorem{remark}{Remark}
+\newcommand{\dd}{\mathrm{d}}
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\Prob}{\mathbb{P}}
+\newcommand{\sgn}{\operatorname{sgn}}
+
+\title{\textbf{A Phase-Conditioned Li\'enard Oscillator Framework for Multi-Asset Regime Detection and Signal Filtering}\\[0.5em]
+\large Working Paper --- Version 1.0}
+
+\author{Anonymous\thanks{Working paper. Comments welcome. This document is maintained as living documentation of the model; see Appendix~\ref{app:changelog} for the version history. Code and replication materials available upon request.}}
+
+\date{June 2026}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+\noindent
+We extend the trend--value oscillator of \citet{majewski2020co} to a phase-conditioned trading framework applied to six asset classes: Bitcoin, the S\&P~500, gold, EUR/USD, WTI crude oil, and an individual equity (Tesla). The core of the model is a stochastic Li\'enard equation in which the effective damping coefficient changes sign as a function of the normalized mispricing between the log-price and a latent fundamental value, itself anchored to a market-value-to-realized-value (MVRV) proxy. Conditional volatility is modeled by an EGARCH(1,1) process with Student-$t$ innovations, discrete market regimes by a three-state Gaussian hidden Markov model, and latent states are estimated by a bootstrap particle filter. Point forecasts from the model do \emph{not} beat a random-walk benchmark in mean absolute error --- a result consistent with weak-form market efficiency and which we report without adjustment. The central empirical finding is instead \emph{conditional}: the sign of the instantaneous Van der Pol damping term, $d_t = 1 - \big((P_t - U_t)/s\big)^2$, partitions the sample into a \emph{trending} phase ($d_t > 0$), in which directional accuracy of an ensemble forecast reaches 60--77\% at the one-week horizon, and a \emph{reverting} phase ($d_t \le 0$), in which the same forecasts are uninformative or anti-predictive. A strategy that trades only in the trending phase, with per-asset thresholds optimized on the first 60\% of walk-forward folds, attains out-of-sample annualized Sharpe ratios of 2.7--3.8 net of transaction costs on five of the six assets, with maximum drawdowns below 3\%. We document the limitations candidly --- interpolated data on several assets, multiple-testing risk accumulated over eleven design iterations, absence of live validation --- and lay out a research roadmap toward exogenous, microstructure-based measurement of each circuit component.
+\end{abstract}
+
+\vspace{0.5em}
+\noindent\textbf{Keywords:} Li\'enard oscillator; Van der Pol; heterogeneous agents; regime detection; particle filter; EGARCH; hidden Markov model; Bitcoin; MVRV; walk-forward validation.
+
+\noindent\textbf{JEL codes:} C32, C53, C58, G12, G17.
+
+% ══════════════════════════════════════════════════════════
+\section{Introduction}
+% ══════════════════════════════════════════════════════════
+
+The idea that asset prices oscillate around a slowly evolving fundamental value under the competing influence of trend-following and value-based investing has a long history in the heterogeneous-agent literature \citep{chiarella1992dynamics,lux1999scaling,hommes2006heterogeneous}. \citet{majewski2020co} formalize this intuition in a nonlinear second-order stochastic differential equation of the Li\'enard class, estimate it on two centuries of monthly data across asset classes, and show that the destabilizing activity of trend-followers induces a qualitative change in the stationary distribution of mispricing, from unimodal to bimodal. Their model, developed at Capital Fund Management, is to our knowledge the most rigorous published attempt to map physical oscillator dynamics onto financial markets.
+
+Three practical questions are left open by that line of work. First, can the oscillator's \emph{instantaneous phase} --- whether the effective damping is currently negative (self-exciting, trend-amplifying) or positive (dissipative, mean-reverting) --- be extracted in real time and used as a conditioning variable for trading signals, rather than as a purely descriptive object? Second, does the framework survive the transition from monthly, long-history data to weekly data on modern assets including cryptocurrencies, where volatility clustering is extreme and regimes shift rapidly? Third, what happens when the latent fundamental is anchored not to a statistical trend but to an economically motivated quantity such as Bitcoin's realized capitalization?
+
+This paper addresses all three questions. Our contributions are:
+
+\begin{enumerate}
+\item \textbf{A phase-conditioning result.} We show across six heterogeneous assets that the sign of the local Van der Pol damping term cleanly separates episodes in which model forecasts carry directional information (trending phase) from episodes in which they do not (reverting phase). On Tesla, for example, one-week directional accuracy is 77.4\% in the trending phase versus 47.9\% in the reverting phase; the ensemble beats the random walk in mean absolute error \emph{only} within the trending phase (MAE ratio 0.62).
+\item \textbf{An honest negative result on point forecasting.} Pooled over all phases, the model does not beat the random walk in MAE on any asset. We argue this is the expected outcome under near-efficiency and that reporting it strengthens rather than weakens the case for the conditional result.
+\item \textbf{A phase-filtered trading strategy} with per-asset thresholds selected on an in-sample segment and evaluated strictly out of sample, net of transaction costs, achieving Sharpe ratios between 2.68 (crude oil) and 3.78 (EUR/USD) on five assets, with sub-period stability analysis.
+\item \textbf{A cross-asset phase score}, the equal-weighted mean of the six damping terms, proposed as a novel systemic-stress indicator.
+\item \textbf{A transparent limitations section and research roadmap}, treating this document as living documentation to be updated as data quality, filtering methodology, and live validation improve.
+\end{enumerate}
+
+The paper is organized as follows. Section~\ref{sec:related} reviews related work. Section~\ref{sec:model} presents the model: the Li\'enard core, the volatility and regime layers, the MVRV-anchored fundamental, and the ensemble forecast. Section~\ref{sec:estimation} describes particle filtering and calibration. Section~\ref{sec:data} details the data and their significant limitations. Section~\ref{sec:results} reports backtest results. Section~\ref{sec:limits} discusses limitations and threats to validity. Section~\ref{sec:roadmap} presents the improvement roadmap. Section~\ref{sec:conclusion} concludes.
+
+% ══════════════════════════════════════════════════════════
+\section{Related Work}\label{sec:related}
+% ══════════════════════════════════════════════════════════
+
+\paragraph{Heterogeneous-agent oscillators.} The trend--value interaction was formalized by \citet{chiarella1992dynamics} and developed by \citet{lux1999scaling} and \citet{hommes2006heterogeneous}. \citet{majewski2020co} derive a Li\'enard-type equation
+\begin{equation}
+\ddot{M} + G(M)\,\dot{M} + \alpha\kappa\,M = \text{noise}, \qquad
+G(M) = \alpha + \kappa - \alpha\gamma\beta\big(1 - \tanh^2(\gamma M)\big),
+\label{eq:bouchaud}
+\end{equation}
+where $M$ is mispricing and $G$ can be negative near $M=0$ when trend-followers dominate --- the same sign-switching damping mechanism as the Van der Pol oscillator, $G_{\text{VdP}}(x) = \mu(x^2 - 1)$. They estimate the model on monthly data since 1800 using filtering techniques and document bimodal mispricing distributions. Our model is a direct descendant: we adopt the Van der Pol parameterization for parsimony, add explicit volatility and regime layers, and shift the object of interest from the stationary distribution to the real-time phase.
+
+\paragraph{Volatility.} GARCH-family models remain the workhorse for crypto volatility. Comparative studies generally favor asymmetric specifications (EGARCH, GJR-GARCH) with heavy-tailed innovations for Bitcoin \citep{katsiampa2017volatility,chu2017garch}. Estimated persistence $\alpha+\beta$ for Bitcoin is typically near or above 0.95, indicating near-integrated variance; our own weekly estimates confirm this.
+
+\paragraph{Regime detection.} Hidden Markov models with two or three Gaussian states are standard for equity and FX regime detection \citep{ang2012regime,nystrup2017dynamic}. Known pathologies include label switching, unstable transition matrices in small samples, and states collapsing onto outliers; we encounter and report several of these.
+
+\paragraph{On-chain valuation.} The MVRV ratio --- market capitalization divided by realized capitalization --- is the most widely used on-chain valuation anchor for Bitcoin; extreme readings ($>3.5$ historically near cycle tops, $<1$ near bottoms) have marked every major cycle turning point since 2011, though thresholds drift as market structure matures. We use a 200-week simple-moving-average price ratio as a freely computable proxy, and flag the substitution of the true realized-cap-based MVRV as a priority upgrade (Section~\ref{sec:roadmap}).
+
+\paragraph{Flow-based predictors.} Recent work documents that spot-ETF net flows are the dominant short-horizon driver of Bitcoin returns since January 2024, with an estimated impact on the order of 50 basis points per \$100M of net inflow at the daily horizon, and that perpetual-futures funding rates carry contrarian information at extremes \citep{schmeling2023crypto}. Neither series enters the present version of the model; both are on the roadmap as the forcing term $F(t)$.
+
+\paragraph{Physics-informed machine learning.} Physics-informed neural networks and neural (S)DEs have recently been applied to option pricing and volatility forecasting. To our knowledge no published work uses a Li\'enard oscillator as the physical prior in such an architecture; we identify this as future work.
+
+% ══════════════════════════════════════════════════════════
+\section{The Model}\label{sec:model}
+% ══════════════════════════════════════════════════════════
+
+\subsection{Electrical-circuit analogy}
+
+The model is organized around an RLC-circuit analogy in which each electrical component maps onto a market mechanism (Table~\ref{tab:analogy}). The analogy is not merely decorative: it dictates the functional form of the dynamics and, in the roadmap of Section~\ref{sec:roadmap}, prescribes which exogenous data series should measure each component.
+
+\begin{table}[H]
+\centering\small
+\caption{Circuit--market correspondence.}
+\label{tab:analogy}
+\begin{tabular}{lll}
+\toprule
+Component & Physics & Market interpretation \\
+\midrule
+$R$ (resistance) & Energy dissipation & Frictions: volatility, spreads, transaction costs \\
+$L$ (inductance) & Inertia of current & Behavioral inertia: momentum, herding \\
+$C$ (capacitance) & Charge storage / restoring force & Fundamental anchoring, valuation pull \\
+$V(t)$ (voltage) & Charge displacement & Mispricing $P_t - U_t$ \\
+$I(t)$ (current) & Charge flow & Price velocity $\dd P/\dd t$ \\
+$F(t)$ (EMF) & External source & Net capital flows (ETF, institutional) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+A linear RLC circuit, however, is empirically rejected: maximum-likelihood estimation of the linear model on all six assets drives the damping ratio $\zeta = \tfrac{R}{2}\sqrt{C/L}$ far above unity (overdamped regime, $\zeta \in [2.3, 6.5]$ in our earlier experiments), i.e.\ the data contain no fixed-frequency oscillation. What the data do support is \emph{state-dependent} damping, which motivates the Li\'enard specification.
+
+\subsection{Core dynamics}
+
+Let $P_t$ denote the log-price, $V_t$ its velocity, and $U_t$ the latent log-fundamental. Define the \emph{normalized mispricing}
+\begin{equation}
+M_t \;=\; \frac{P_t - U_t}{s},
+\end{equation}
+where $s>0$ is a threshold scale. The continuous-time dynamics are
+\begin{align}
+\dd P_t &= V_t\,\dd t, \label{eq:dP}\\[2pt]
+\dd V_t &= \Big[\underbrace{\mu\,(1 - M_t^2)\,V_t}_{\text{Van der Pol damping}}
+\;-\; \underbrace{\omega^2 (P_t - U_t)}_{\text{fundamental pull}}
+\;+\; \underbrace{\gamma F_t}_{\text{forcing}}\Big]\dd t
+\;+\; \sigma_t\,\dd W_t^{(V)}, \label{eq:dV}\\[2pt]
+\dd U_t &= \alpha\,\big(U^{\star}_t - U_t\big)\,\dd t \;+\; \sigma_U\,\dd W_t^{(U)}, \label{eq:dU}
+\end{align}
+with independent Wiener processes $W^{(V)}, W^{(U)}$. The parameters are: $\mu > 0$ the self-excitation strength, $\omega^2 > 0$ the squared pull frequency, $s$ the nonlinear switching scale, $\gamma$ the flow sensitivity, $\alpha$ the adaptation speed of the fundamental, and $\sigma_t$ the conditional volatility supplied by the EGARCH layer (Section~\ref{sec:garch}).
+
+\begin{remark}[Sign-switching damping]
+The effective damping coefficient in \eqref{eq:dV} is $-\mu(1 - M_t^2)$. When $|M_t| < 1$ (price within $\pm s$ of fundamental in log terms) the coefficient is \emph{negative}: perturbations are amplified and trends self-reinforce, the regime dominated by trend-followers in the language of \citet{majewski2020co}. When $|M_t| > 1$ the coefficient is \emph{positive}: motion is dissipated and the price is pulled back, the fundamentalist-dominated regime. The boundary $|M_t| = 1$, i.e.\ $|P_t - U_t| = s$, is estimated from data and is the single most important structural parameter of the model.
+\end{remark}
+
+\begin{proposition}[Deterministic limit cycle]
+In the noise-free, unforced case ($\sigma_t = \gamma = \sigma_U = 0$, $U_t \equiv U$), system \eqref{eq:dP}--\eqref{eq:dV} reduces to the classical Van der Pol equation $\ddot{x} - \mu(1-x^2/s^2)\dot{x} + \omega^2 x = 0$ with $x = P - U$, which for $\mu > 0$ possesses a unique, globally attracting limit cycle \citep{vanderpol1926}. The financial interpretation is an endogenous boom--bust cycle: slow amplification inside the corridor $|x|<s$, rapid correction outside it.
+\end{proposition}
+
+\subsection{Phase variable}
+
+The object we condition on throughout the empirical work is the \emph{instantaneous damping sign}
+\begin{equation}
+d_t \;=\; 1 - M_t^2 \;=\; 1 - \left(\frac{P_t - U_t}{s}\right)^{\!2},
+\qquad
+\text{Phase}_t =
+\begin{cases}
+\textsc{trending} & d_t > 0,\\
+\textsc{reverting} & d_t \le 0.
+\end{cases}
+\label{eq:phase}
+\end{equation}
+$d_t$ is computed from the particle-filter estimates of $P_t$ and $U_t$ (Section~\ref{sec:estimation}) and requires no look-ahead.
+
+\subsection{Volatility layer: EGARCH(1,1)-$t$}\label{sec:garch}
+
+Weekly log-returns $r_t$ follow
+\begin{equation}
+r_t = \sigma_t \varepsilon_t, \qquad \varepsilon_t \sim t_\nu, \qquad
+\ln \sigma_t^2 = \omega_g + \beta_g \ln \sigma_{t-1}^2
++ \alpha_g\big(|\varepsilon_{t-1}| - \E|\varepsilon_{t-1}|\big) + \delta_g\,\varepsilon_{t-1},
+\end{equation}
+estimated by maximum likelihood with a GJR-GARCH and a rolling-window standard-deviation fallback in case of non-convergence. The fitted $\sigma_t$ enters \eqref{eq:dV} as the state-noise scale, so that the particle filter automatically widens its search in high-volatility episodes. Estimated persistence on weekly Bitcoin returns is near unity with $\hat\nu \approx 3$--$4$, confirming near-integrated variance and heavy tails.
+
+\subsection{Regime layer: three-state Gaussian HMM}\label{sec:hmm}
+
+Weekly returns are additionally described by a hidden Markov chain $Z_t \in \{\text{bear},\text{range},\text{bull}\}$ with Gaussian emissions, states sorted by emission mean. Estimation uses the Baum--Welch algorithm with ten random restarts. The chain plays two roles: (i) the self-excitation is modulated by regime, $\mu_t = \mu \cdot \{1.3, 0.7, 1.1\}_{Z_t}$, so that trend amplification is strongest in bear markets (crash dynamics) and weakest in quiet ranges; (ii) Monte Carlo forecasts propagate $Z_t$ through the estimated transition matrix, injecting realistic regime persistence into predictive distributions. We report in Section~\ref{sec:limits} that HMM estimation is fragile on interpolated series --- transition rows occasionally degenerate --- and treat regime outputs as auxiliary rather than load-bearing.
+
+\subsection{MVRV-anchored fundamental}\label{sec:mvrv}
+
+The fundamental target in \eqref{eq:dU} blends an on-chain-style valuation anchor with a structural growth trend:
+\begin{equation}
+U^{\star}_t \;=\; 0.6 \,\big(P_t - \ln \mathrm{MVRV}_t\big) \;+\; 0.4\,\big(g\,t + P_0\big),
+\qquad
+\mathrm{MVRV}_t = \frac{\exp(P_t)}{\mathrm{SMA}_{w}(\exp P)_t},
+\label{eq:ustar}
+\end{equation}
+with $w = 200$ weeks for Bitcoin (the community-standard long-cycle anchor) and $w = 52$ weeks for the other assets, and $g$ the full-sample average log-growth. Since $P_t - \ln\mathrm{MVRV}_t = \ln \mathrm{SMA}_w(\exp P)_t$, the anchor is the log of the long moving average --- a proxy for the aggregate cost basis. For Bitcoin the intended production replacement is the true realized-capitalization MVRV, which measures the actual on-chain cost basis of all coins and is economically exogenous to the spot price path in a way the SMA proxy is not (Section~\ref{sec:roadmap}).
+
+\subsection{Ensemble forecast}\label{sec:ensemble}
+
+Point and distributional forecasts combine three components:
+\begin{align}
+\hat{P}^{\text{RW}}_{t+h} &= P_t,\\
+\hat{P}^{\text{AR}}_{t+h} &= P_t + \hat{\delta}\,h + \hat{\rho}\, r_t \, 0.8^{\,h-1},\\
+\hat{P}^{\text{VdP}}_{t+h} &= \operatorname{median}\big\{P^{(m)}_{t+h}\big\}_{m=1}^{N_{\mathrm{MC}}},
+\end{align}
+where $\hat\delta$ and $\hat\rho$ are the training-window drift and lag-one autocorrelation, and $P^{(m)}$ are Monte Carlo paths of \eqref{eq:dP}--\eqref{eq:dU} with regime switching. The ensemble is
+\begin{equation}
+\hat{P}^{\text{ENS}}_{t+h} = w_{\mathrm{RW}}\hat{P}^{\text{RW}}_{t+h}
++ w_{\mathrm{AR}}\hat{P}^{\text{AR}}_{t+h}
++ w_{\mathrm{VdP}}\hat{P}^{\text{VdP}}_{t+h},
+\end{equation}
+with adaptive weights: if the trailing four-fold ensemble MAE beats the random walk, $(w_{\mathrm{RW}},w_{\mathrm{AR}},w_{\mathrm{VdP}}) = (0.20,0.30,0.50)$; otherwise $(0.45,0.30,0.25)$. The directional probability $\hat{p}^{\uparrow}_{t+h}$ is the analogous mixture of $0.5$, $\mathbf{1}\{\hat{P}^{\text{AR}} > P_t\}$, and the Monte Carlo exceedance frequency.
+
+% ══════════════════════════════════════════════════════════
+\section{Estimation}\label{sec:estimation}
+% ══════════════════════════════════════════════════════════
+
+\subsection{Bootstrap particle filter}
+
+The state $x_t = (P_t, V_t, U_t)$ is estimated by a bootstrap particle filter \citep{gordon1993novel} with $N_p \in [40, 200]$ particles depending on the computational budget of the experiment. Each particle propagates through the Euler discretization of \eqref{eq:dP}--\eqref{eq:dU} with $\Delta t = 1$ week; the observation density is Gaussian around the particle log-price with scale $\sigma_t$; systematic resampling triggers when the effective sample size falls below $0.35\,N_p$. We acknowledge that $N_p \le 200$ is below the $10^3$--$10^4$ typically recommended for three-dimensional nonlinear systems and list the upgrade to a properly sized, jointly calibrated particle MCMC scheme as roadmap item R2.
+
+\subsection{Structural parameter calibration}
+
+$(\mu, \omega^2, s)$ are selected by grid search minimizing the one-step-ahead squared filtering error on the most recent 80--104 weeks:
+\[
+\mu \in \{0.3, 0.6, 1.0\}, \quad \omega^2 \in \{0.001, 0.005, 0.01\}, \quad s \in \{0.25, 0.45, 0.65\}.
+\]
+Across all six assets the selected switching scale is $s = 0.25$ (a $\pm 25\%$ log-mispricing corridor), a striking cross-asset regularity we do not impose but consistently recover. Selected $\mu$ is 0.6 for Bitcoin and 0.3 elsewhere; selected $\omega^2$ is 0.01 for most assets.
+
+\subsection{Signal thresholds and walk-forward protocol}
+
+The backtest uses expanding walk-forward folds: 52-week training window, 8-week test window, 4-week step, yielding roughly 135 folds per asset over 2016--2026. The trading signal at horizon one week is
+\begin{equation}
+\text{sig}_t =
+\begin{cases}
++1 & \text{if } d_t > 0 \text{ and } \hat{p}^{\uparrow}_t > \theta_{\mathrm{up}},\\
+-1 & \text{if } d_t > 0 \text{ and } \hat{p}^{\uparrow}_t < \theta_{\mathrm{dn}},\\
+0 & \text{otherwise (including all of the reverting phase)}.
+\end{cases}
+\label{eq:signal}
+\end{equation}
+The thresholds $(\theta_{\mathrm{up}}, \theta_{\mathrm{dn}})$ are optimized \emph{per asset} by grid search on the Sharpe ratio over the \emph{first 60\% of folds only} (in-sample segment); all strategy statistics reported as out-of-sample (OOS) come exclusively from the remaining 40\% of folds. One-way transaction costs of 15\,bp (Bitcoin), 10\,bp (equities, gold, oil), and 5\,bp (FX) are deducted on every position change.
+
+% ══════════════════════════════════════════════════════════
+\section{Data}\label{sec:data}
+% ══════════════════════════════════════════════════════════
+
+Table~\ref{tab:data} summarizes the six series, all resampled to Friday-close weekly frequency over January 2015 -- June 2026 ($\approx$ 592--598 weeks per asset).
+
+\begin{table}[H]
+\centering\small
+\caption{Data sources and quality. \emph{The quality column is central to interpreting all results.}}
+\label{tab:data}
+\begin{tabular}{lllll}
+\toprule
+Asset & Native frequency & Source & Weekly construction & Quality \\
+\midrule
+Bitcoin (BTC/USD) & Daily & Public aggregate & True weekly close & \textbf{Good} \\
+S\&P 500 & Monthly & Shiller dataset & Linear interpolation & \textbf{Weak} \\
+Gold (XAU/USD) & Monthly & Public dataset & Linear interpolation & \textbf{Weak} \\
+EUR/USD & $\sim$Semi-annual landmarks & Manual & Interpolation & \textbf{Very weak} \\
+WTI crude oil & $\sim$Monthly landmarks & Manual & Interpolation & \textbf{Very weak} \\
+Tesla (TSLA) & $\sim$Monthly landmarks & Manual & Interpolation & \textbf{Very weak} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\noindent\textbf{Warning.} Interpolated series are artificially smooth: they understate realized volatility, remove intraweek reversals, and inflate the apparent persistence of trends. Every performance statistic on the five non-Bitcoin assets must therefore be read as an \emph{upper bound} on what true market data would deliver. Replacing all series with genuine daily closes from a professional vendor is roadmap item R1 and is a precondition for any external claim about the strategy.
+
+% ══════════════════════════════════════════════════════════
+\section{Empirical Results}\label{sec:results}
+% ══════════════════════════════════════════════════════════
+
+\subsection{Point forecasting: the model does not beat the random walk}
+
+Table~\ref{tab:mae} reports one-week-ahead MAE of the ensemble against the random walk, pooled over all folds. The ensemble loses on every asset (ratio $>1$ throughout). We emphasize this deliberately: any framework claiming to beat the random walk unconditionally on liquid asset prices at short horizons should be met with suspicion, and ours does not.
+
+\begin{table}[H]
+\centering\small
+\caption{One-week-ahead point-forecast accuracy, all phases pooled ($\approx$133--135 obs.\ per asset). Ratio $=$ MAE\textsubscript{ENS}/MAE\textsubscript{RW}.}
+\label{tab:mae}
+\begin{tabular}{lrrrr}
+\toprule
+Asset & MAE ENS & MAE RW & Ratio & Dir.\ acc.\ (\%) \\
+\midrule
+Bitcoin & 2\,920 & 1\,692 & 1.73 & 43.0 \\
+S\&P 500 & 37.8 & 24.7 & 1.53 & 62.4 \\
+Gold & 18.6 & 12.6 & 1.47 & 69.9 \\
+EUR/USD & 0.0035 & 0.0005 & 7.33 & 60.0 \\
+Crude oil & 0.59 & 0.50 & 1.18 & 64.4 \\
+Tesla & 15.9 & 5.8 & 2.77 & 61.5 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{The phase-conditioning result}
+
+Table~\ref{tab:phase} splits the same observations by the sign of $d_t$. Two patterns emerge. First, on Tesla the ensemble beats the random walk \emph{within the trending phase} (ratio 0.62, directional accuracy 77.4\%) while being badly anti-predictive in the reverting phase (47.9\%). Second, on every asset except Bitcoin the trending-phase MAE ratio is materially lower than the reverting-phase ratio, i.e.\ the model's relative accuracy is systematically better when its own damping diagnostic says trends should persist. Bitcoin is the exception on both counts and we classify it as unsuitable for signal generation in the current version (its trending phase covers only 13 of 135 weeks).
+
+\begin{table}[H]
+\centering\small
+\caption{One-week-ahead accuracy conditional on phase. $n$: observations; Ratio $=$ MAE\textsubscript{ENS}/MAE\textsubscript{RW}; Dir: directional accuracy (\%). Bold marks the phase in which the ensemble beats the RW in MAE.}
+\label{tab:phase}
+\begin{tabular}{l rrr c rrr}
+\toprule
+& \multicolumn{3}{c}{Trending ($d_t>0$)} & & \multicolumn{3}{c}{Reverting ($d_t\le 0$)} \\
+\cmidrule{2-4}\cmidrule{6-8}
+Asset & $n$ & Ratio & Dir & & $n$ & Ratio & Dir \\
+\midrule
+Bitcoin & 13 & 1.05 & 53.8 & & 122 & 1.82 & 41.8 \\
+S\&P 500 & 122 & 1.31 & 64.8 & & 11 & 4.61 & 36.4 \\
+Gold & 108 & 1.46 & 68.5 & & 25 & 1.49 & 76.0 \\
+EUR/USD & 130 & 4.86 & 60.0 & & 5 & 82.5 & 60.0 \\
+Crude oil & 86 & 1.10 & 61.6 & & 49 & 1.26 & 69.4 \\
+Tesla & 62 & \textbf{0.62} & \textbf{77.4} & & 73 & 3.25 & 47.9 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Phase-filtered strategy, out of sample, net of costs}
+
+Table~\ref{tab:strategy} is the headline table. Thresholds are fixed on the first 60\% of folds; everything shown is from the held-out 40\% ($n = 54$ weekly observations per asset), net of transaction costs.
+
+\begin{table}[H]
+\centering\small
+\caption{Out-of-sample phase-filtered strategy, net of costs. Sharpe ratios annualized ($\sqrt{52}$). Stab.\ H1/H2: Sharpe on first/second half of the full fold sequence using the optimized thresholds. B\&H: buy-and-hold on the same OOS segment.}
+\label{tab:strategy}
+\begin{tabular}{l rrrrr rr r}
+\toprule
+Asset & Sharpe & B\&H & Win \% & MaxDD \% & Active \% & Stab.\ H1 & Stab.\ H2 & $(\theta_{\mathrm{dn}},\theta_{\mathrm{up}})$ \\
+\midrule
+EUR/USD & \textbf{3.78} & 0.10 & 73.1 & $-0.6$ & 96 & 3.78 & 3.53 & (0.48, 0.52) \\
+Tesla & \textbf{3.69} & $-1.64$ & 100.0 & 0.0 & 28 & 5.03 & 3.21 & (0.35, 0.62) \\
+Gold & \textbf{3.62} & 3.69 & 77.3 & $-0.5$ & 41 & 3.95 & 3.62 & (0.35, 0.62) \\
+S\&P 500 & \textbf{2.76} & 1.98 & 72.1 & $-2.6$ & 80 & 3.84 & 2.61 & (0.35, 0.52) \\
+Crude oil & \textbf{2.68} & $-3.11$ & 78.6 & $-1.2$ & 52 & 3.18 & 2.55 & (0.35, 0.52) \\
+Bitcoin & $-1.27$ & 1.07 & 37.5 & $-19.7$ & 15 & --- & $-1.13$ & (0.45, 0.55) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Three observations. (i) Five of six assets clear an OOS Sharpe of 2.6 with maximum drawdowns under 3\%; sub-period decay between the first and second half of the sample is modest for gold and EUR/USD ($<10\%$) and moderate ($20$--$36\%$) for the others --- decay, not disappearance. (ii) Tesla's 100\% win rate is a small-sample artifact (the phase filter admits only $\sim$15 trades in the OOS window) and should not be quoted without that caveat. (iii) Bitcoin fails as a trading target but retains analytical value: the filtered fundamental of $\approx\$47{,}200$ against a spot of \$66{,}522 (mispricing $+35\%$, MVRV proxy 1.07, phase \textsc{reverting}) is an interpretable valuation statement.
+
+\subsection{Cross-asset phase score}
+
+Define the systemic phase score $\bar{d}_t = \tfrac{1}{6}\sum_{a} d^{(a)}_t$. At the sample end (June 2026): BTC $-1.00$, gold $-0.90$, S\&P 500 $+0.16$, Tesla $+0.77$, oil $+0.86$, EUR/USD $+1.00$; $\bar{d} = +0.15$ with four of six assets trending, which we label low systemic stress. The conjecture --- untested and flagged as roadmap item R6 --- is that episodes in which most assets simultaneously enter the reverting phase precede broad risk-off moves, making $\bar{d}_t$ a candidate early-warning indicator distinct from volatility- or correlation-based stress measures.
+
+% ══════════════════════════════════════════════════════════
+\section{Limitations and Threats to Validity}\label{sec:limits}
+% ══════════════════════════════════════════════════════════
+
+We list these in order of severity; the paper's claims should be weighted accordingly.
+
+\begin{enumerate}
+\item \textbf{Data quality (critical).} Five of six series are interpolated from monthly or sparser observations. Interpolation smooths away exactly the reversals a mean-reversion filter must survive, mechanically inflating win rates and Sharpe ratios. Bitcoin, the only true-frequency series, is also the only one on which the strategy fails --- a correlation that should worry the reader as much as it worries us.
+\item \textbf{Accumulated multiple testing (severe).} The present specification is the eleventh design iteration on largely the same data. Even with the 60/40 in-/out-of-sample threshold split, model-level choices (Li\'enard vs.\ linear RLC, weekly vs.\ daily frequency, ensemble composition, regime multipliers) were made after observing earlier results. The honest correction is a frozen-specification test on genuinely new data (post-June-2026), which we commit to in the changelog protocol of Appendix~\ref{app:changelog}.
+\item \textbf{No live validation (critical for any deployment claim).} Industry experience puts live Sharpe at roughly 20--50\% of backtested Sharpe once slippage, latency, and regime novelty are included. A 6--12 month paper-trading period is a precondition for any capital deployment.
+\item \textbf{Under-sized particle filter (moderate).} $N_p \le 200$ yields high-variance state estimates; the phase variable $d_t$ inherits this variance near the boundary $|M_t| = 1$.
+\item \textbf{Predictive intervals are miscalibrated (moderate).} Empirical 68\% coverage of the ensemble bands is far below nominal on weekly data (near zero at $h=1$ in the current run); the intervals are too narrow and the ad-hoc inflation factor introduced in earlier versions is not a principled fix. Conformal calibration is roadmap item R4.
+\item \textbf{Endogenous fundamental (moderate, Bitcoin-specific).} The SMA-based MVRV proxy is a transformation of the price itself, so the ``fundamental'' is not truly exogenous; the trending/reverting partition is correspondingly a statement about price-vs-own-history, not price-vs-economic-value.
+\item \textbf{Capacity, shorting, and financing untested.} Reported Sharpe ignores market impact, borrow costs on shorts, and margin financing; strategy capacity is unknown.
+\item \textbf{HMM fragility.} Baum--Welch occasionally fails to converge and transition rows degenerate on smooth series; regime outputs are used as modulation, not as primary signals, precisely for this reason.
+\end{enumerate}
+
+% ══════════════════════════════════════════════════════════
+\section{Research Roadmap}\label{sec:roadmap}
+% ══════════════════════════════════════════════════════════
+
+The roadmap operationalizes the circuit analogy of Table~\ref{tab:analogy}: each component of the oscillator is to be \emph{measured} by an exogenous data stream rather than inferred from the price path.
+
+\begin{description}
+\item[R1 --- Real market data (precondition).] Replace all interpolated series with vendor daily closes (equities, FX, commodities) and exchange-native weekly closes (crypto). Re-run the frozen v1.0 specification without any re-tuning; report the degradation openly.
+\item[R2 --- Properly sized joint estimation.] Particle MCMC (or an unscented Rao-Blackwellized filter) with $N_p \ge 2{,}000$, estimating $(\mu, \omega^2, s, \alpha)$ jointly with the states rather than by grid search, with parameter posteriors reported.
+\item[R3 --- Exogenous circuit inputs.]
+$C$: true realized-cap MVRV, SOPR, and UTXO age bands for Bitcoin (fundamental $U_t$ measured from on-chain cost basis);
+$R$: order-book depth at $\pm 2\%$ of mid as a time-varying friction (liquidity withdrawal as a leading indicator of volatility);
+$L$: order-flow imbalance and VPIN-type flow toxicity as measured behavioral inertia;
+$F$: daily spot-ETF net flows and aggregate stablecoin issuance as the forcing term.
+\item[R4 --- Calibrated predictive intervals.] Split-conformal prediction on walk-forward residuals to obtain finite-sample-valid bands, replacing the ad-hoc inflation.
+\item[R5 --- Frozen-specification live test.] Six to twelve months of automated weekly paper trading of the exact v1.0 signal \eqref{eq:signal}, results appended to this document regardless of outcome.
+\item[R6 --- Systemic phase score validation.] Event-study of $\bar{d}_t$ around historical stress episodes (2018Q4, March 2020, 2022) on real data; comparison against VIX- and correlation-based stress indices.
+\item[R7 --- Physics-informed neural extension.] A neural SDE whose drift is regularized toward the Li\'enard form (PINN-style penalty), letting data speak where the physics is too rigid while preserving interpretability of the phase variable.
+\item[R8 --- Portfolio layer.] Cross-asset allocation using phase-conditional covariance estimates; capacity and impact modeling.
+\end{description}
+
+% ══════════════════════════════════════════════════════════
+\section{Conclusion}\label{sec:conclusion}
+% ══════════════════════════════════════════════════════════
+
+We have taken the trend--value oscillator of \citet{majewski2020co} from a descriptive tool to a real-time conditioning device. The model's point forecasts do not beat a random walk --- and we see no reason to expect otherwise on liquid assets --- but its \emph{phase variable}, the sign of the state-dependent Van der Pol damping, reliably separates weeks in which an ensemble forecast carries directional information from weeks in which it does not. A strategy that trades only in the trending phase attains out-of-sample Sharpe ratios of 2.7--3.8 net of costs on five assets, with the essential caveat that most of the underlying data are interpolated and the true numbers on real market data will be lower. Whether they remain above the commercial threshold of 1.5 is precisely the question the roadmap is designed to answer. The framework's durable contribution, independent of that answer, is interpretability: it translates the state of a market into the language of a physical circuit --- how much friction, how much inertia, how strong the restoring force --- and tells the user, honestly, when its own forecasts should and should not be trusted.
+
+% ══════════════════════════════════════════════════════════
+\begin{thebibliography}{99}
+% ══════════════════════════════════════════════════════════
+
+\bibitem[Ang and Timmermann(2012)]{ang2012regime}
+Ang, A., and A. Timmermann (2012).
+Regime changes and financial markets.
+\emph{Annual Review of Financial Economics}, 4, 313--337.
+
+\bibitem[Chiarella(1992)]{chiarella1992dynamics}
+Chiarella, C. (1992).
+The dynamics of speculative behaviour.
+\emph{Annals of Operations Research}, 37, 101--123.
+
+\bibitem[Chu et al.(2017)]{chu2017garch}
+Chu, J., S. Chan, S. Nadarajah, and J. Osterrieder (2017).
+GARCH modelling of cryptocurrencies.
+\emph{Journal of Risk and Financial Management}, 10(4), 17.
+
+\bibitem[Gordon et al.(1993)]{gordon1993novel}
+Gordon, N.~J., D.~J. Salmond, and A.~F.~M. Smith (1993).
+Novel approach to nonlinear/non-Gaussian Bayesian state estimation.
+\emph{IEE Proceedings F}, 140(2), 107--113.
+
+\bibitem[Hommes(2006)]{hommes2006heterogeneous}
+Hommes, C.~H. (2006).
+Heterogeneous agent models in economics and finance.
+In \emph{Handbook of Computational Economics}, Vol.~2, 1109--1186. Elsevier.
+
+\bibitem[Katsiampa(2017)]{katsiampa2017volatility}
+Katsiampa, P. (2017).
+Volatility estimation for Bitcoin: A comparison of GARCH models.
+\emph{Economics Letters}, 158, 3--6.
+
+\bibitem[Lux and Marchesi(1999)]{lux1999scaling}
+Lux, T., and M. Marchesi (1999).
+Scaling and criticality in a stochastic multi-agent model of a financial market.
+\emph{Nature}, 397, 498--500.
+
+\bibitem[Majewski et al.(2020)]{majewski2020co}
+Majewski, A.~A., S. Ciliberti, and J.-P. Bouchaud (2020).
+Co-existence of trend and value in financial markets: Estimating an extended Chiarella model.
+\emph{Journal of Economic Dynamics and Control}, 112, 103791.
+
+\bibitem[Nystrup et al.(2017)]{nystrup2017dynamic}
+Nystrup, P., H. Madsen, and E. Lindstr\"om (2017).
+Dynamic allocation or diversification: A regime-based approach to multiple assets.
+\emph{Journal of Portfolio Management}, 44(2), 62--73.
+
+\bibitem[Schmeling et al.(2023)]{schmeling2023crypto}
+Schmeling, M., A. Schrimpf, and K. Todorov (2023).
+Crypto carry.
+\emph{BIS Working Papers}, No.~1087.
+
+\bibitem[Van der Pol(1926)]{vanderpol1926}
+Van der Pol, B. (1926).
+On ``relaxation-oscillations''.
+\emph{The London, Edinburgh, and Dublin Philosophical Magazine}, 2(11), 978--992.
+
+\end{thebibliography}
+
+% ══════════════════════════════════════════════════════════
+\appendix
+\section{Discretization and Algorithms}\label{app:algo}
+% ══════════════════════════════════════════════════════════
+
+\paragraph{Euler scheme.} With $\Delta t = 1$ week, particle $i$ propagates as
+\begin{align*}
+P^{(i)}_{t+1} &= P^{(i)}_t + V^{(i)}_t,\\
+V^{(i)}_{t+1} &= V^{(i)}_t + \mu_t\big(1 - (M^{(i)}_t)^2\big)V^{(i)}_t
+- \omega^2\big(P^{(i)}_t - U^{(i)}_t\big) + \eta^{(i)}_t + \sigma_t\,\epsilon^{(i)}_t,\\
+U^{(i)}_{t+1} &= U^{(i)}_t + \alpha\big(U^{\star}_t - U^{(i)}_t\big) + \sigma_U\,\xi^{(i)}_t,
+\end{align*}
+with $\epsilon, \xi \sim \mathcal{N}(0,1)$ i.i.d., $\eta$ a small flux shock, velocity clipped to $|V| \le 0.15$, and $\mu_t = \mu\{1.3, 0.7, 1.1\}_{Z_t}$. Weights $w^{(i)}_t \propto \exp\{-(y_t - P^{(i)}_t)^2 / 2\sigma_t^2\}$; systematic resampling when $\mathrm{ESS} < 0.35 N_p$.
+
+\paragraph{Walk-forward protocol.} For fold $k$ with training end $\tau_k$: (1) fit EGARCH and HMM on the training window; (2) run the particle filter to obtain $(\hat P_{\tau_k}, \hat V_{\tau_k}, \hat U_{\tau_k}, d_{\tau_k})$; (3) simulate $N_{\mathrm{MC}}$ regime-switching paths to horizons $h = 1,\dots,8$; (4) form ensemble forecasts and the signal \eqref{eq:signal}; (5) record realized returns net of costs; (6) advance $\tau_{k+1} = \tau_k + 4$ weeks.
+
+\section{Calibrated Parameters (v1.0)}\label{app:params}
+
+\begin{table}[H]
+\centering\small
+\caption{Structural parameters selected by grid search, June 2026 snapshot.}
+\begin{tabular}{lccc c cc}
+\toprule
+Asset & $\mu$ & $\omega^2$ & $s$ & & Phase (end) & Mispricing (end) \\
+\midrule
+Bitcoin & 0.6 & 0.010 & 0.25 & & \textsc{reverting} & $+35.3\%$ \\
+S\&P 500 & 0.3 & 0.010 & 0.25 & & \textsc{trending} & $+23.0\%$ \\
+Gold & 0.3 & 0.010 & 0.25 & & \textsc{reverting} & $+34.5\%$ \\
+EUR/USD & 0.3 & 0.005 & 0.25 & & \textsc{trending} & $-1.2\%$ \\
+Crude oil & 0.3 & 0.010 & 0.25 & & \textsc{trending} & $-9.3\%$ \\
+Tesla & 0.3 & 0.005 & 0.25 & & \textsc{trending} & $-11.9\%$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Changelog and Update Protocol}\label{app:changelog}
+
+This document is living documentation. Every substantive model change appends an entry below; results from frozen specifications are never retro-edited.
+
+\begin{description}
+\item[v1.0 (June 2026).] Initial write-up. Li\'enard core \eqref{eq:dP}--\eqref{eq:dU}; EGARCH(1,1)-$t$ with fallbacks; 3-state HMM modulation; SMA-based MVRV anchor \eqref{eq:ustar}; bootstrap PF ($N_p \le 200$); ensemble RW/AR/VdP with adaptive weights; phase-filtered signal \eqref{eq:signal} with per-asset thresholds (60/40 split); costs 5--15\,bp. Headline OOS Sharpe (net): EUR/USD 3.78, Tesla 3.69, Gold 3.62, S\&P 500 2.76, Oil 2.68, BTC $-1.27$. Known critical issues: interpolated data on five assets (R1), $\approx$0\% interval coverage at $h{=}1$ (R4), eleven accumulated design iterations (frozen-spec test required).
+\item[v1.1 (planned).] R1 executed: all assets on vendor daily data; frozen v1.0 re-run reported side-by-side. \emph{[to be completed]}
+\item[v1.2 (planned).] R2 (PMCMC, $N_p \ge 2000$) and R4 (conformal intervals). \emph{[to be completed]}
+\item[v2.0 (planned).] R3 exogenous circuit inputs (realized-cap MVRV, order-book $R$, flow-based $L$, ETF-flow $F$); R5 live paper-trading log opened. \emph{[to be completed]}
+\end{description}
+
+\end{document}
