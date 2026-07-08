@@ -1,0 +1,118 @@
+{
+  "SP500": {
+    "n_weeks": 281,
+    "n_folds": 56,
+    "real_vol": 17.4,
+    "frozen_params": {
+      "mu": 0.3,
+      "om": 0.01,
+      "s": 0.25,
+      "th_dn": 0.35,
+      "th_up": 0.52,
+      "cost": 0.001
+    },
+    "phase_split": {
+      "trending_n": 54,
+      "reverting_n": 2,
+      "trending_dir": 50.0,
+      "trending_ratio": 1.118
+    },
+    "strategy": {
+      "sharpe": 0.39,
+      "sharpe_bnh": -0.52,
+      "ret": 6.2,
+      "ret_bnh": -11.9,
+      "dd": -13.4,
+      "win": 47.7,
+      "active_pct": 79.0,
+      "n_trades": 44
+    }
+  },
+  "Gold": {
+    "n_weeks": 281,
+    "n_folds": 56,
+    "real_vol": 13.7,
+    "frozen_params": {
+      "mu": 0.3,
+      "om": 0.01,
+      "s": 0.25,
+      "th_dn": 0.35,
+      "th_up": 0.62,
+      "cost": 0.001
+    },
+    "phase_split": {
+      "trending_n": 55,
+      "reverting_n": 1,
+      "trending_dir": 50.9,
+      "trending_ratio": 1.155
+    },
+    "strategy": {
+      "sharpe": -0.44,
+      "sharpe_bnh": 1.06,
+      "ret": -4.1,
+      "ret_bnh": 13.6,
+      "dd": -10.0,
+      "win": 53.6,
+      "active_pct": 50.0,
+      "n_trades": 28
+    }
+  },
+  "Oil": {
+    "n_weeks": 281,
+    "n_folds": 56,
+    "real_vol": 44.9,
+    "frozen_params": {
+      "mu": 0.3,
+      "om": 0.01,
+      "s": 0.25,
+      "th_dn": 0.35,
+      "th_up": 0.52,
+      "cost": 0.001
+    },
+    "phase_split": {
+      "trending_n": 36,
+      "reverting_n": 20,
+      "trending_dir": 52.8,
+      "trending_ratio": 1.135
+    },
+    "strategy": {
+      "sharpe": 0.1,
+      "sharpe_bnh": -0.25,
+      "ret": -0.3,
+      "ret_bnh": -21.4,
+      "dd": -23.3,
+      "win": 50.0,
+      "active_pct": 54.0,
+      "n_trades": 30
+    }
+  },
+  "EUR/USD": {
+    "n_weeks": 281,
+    "n_folds": 56,
+    "real_vol": 8.6,
+    "frozen_params": {
+      "mu": 0.3,
+      "om": 0.005,
+      "s": 0.25,
+      "th_dn": 0.48,
+      "th_up": 0.52,
+      "cost": 0.0005
+    },
+    "phase_split": {
+      "trending_n": 54,
+      "reverting_n": 2,
+      "trending_dir": 55.6,
+      "trending_ratio": 1.885
+    },
+    "strategy": {
+      "sharpe": -0.69,
+      "sharpe_bnh": -0.19,
+      "ret": -5.3,
+      "ret_bnh": -1.7,
+      "dd": -7.5,
+      "win": 55.6,
+      "active_pct": 96.0,
+      "n_trades": 54
+    }
+  }
+}

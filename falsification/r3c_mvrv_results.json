@@ -1,0 +1,100 @@
+{
+  "coverage": "2015-01-02 to 2026-05-29",
+  "current": {
+    "price": 76620,
+    "mvrv": 1.415,
+    "realized_price": 54165
+  },
+  "t1": {
+    "13": {
+      "MVRV < 1.0 (accumulation)": {
+        "n": 85,
+        "ret": 18.7,
+        "pos": 65.0
+      },
+      "1.0-2.4 (neutre)": {
+        "n": 416,
+        "ret": 10.7,
+        "pos": 60.0
+      },
+      "2.4-3.5 (chaud)": {
+        "n": 73,
+        "ret": 20.9,
+        "pos": 58.0
+      },
+      "MVRV > 3.5 (top)": {
+        "n": 9,
+        "ret": -19.8,
+        "pos": 44.0
+      }
+    },
+    "26": {
+      "MVRV < 1.0 (accumulation)": {
+        "n": 85,
+        "ret": 43.8,
+        "pos": 82.0
+      },
+      "1.0-2.4 (neutre)": {
+        "n": 403,
+        "ret": 22.1,
+        "pos": 65.0
+      },
+      "2.4-3.5 (chaud)": {
+        "n": 73,
+        "ret": 33.8,
+        "pos": 68.0
+      },
+      "MVRV > 3.5 (top)": {
+        "n": 9,
+        "ret": -12.7,
+        "pos": 22.0
+      }
+    },
+    "52": {
+      "MVRV < 1.0 (accumulation)": {
+        "n": 85,
+        "ret": 66.6,
+        "pos": 100.0
+      },
+      "1.0-2.4 (neutre)": {
+        "n": 377,
+        "ret": 64.0,
+        "pos": 75.0
+      },
+      "2.4-3.5 (chaud)": {
+        "n": 73,
+        "ret": 14.2,
+        "pos": 55.0
+      },
+      "MVRV > 3.5 (top)": {
+        "n": 9,
+        "ret": -49.3,
+        "pos": 22.0
+      }
+    }
+  },
+  "t2": {
+    "TRENDING (d>0)": {
+      "n": 110,
+      "dir": 55.5
+    },
+    "REVERTING (d<=0)": {
+      "n": 485,
+      "dir": 48.2
+    }
+  },
+  "t3": {
+    "price-only (U=SMA)": 53.1,
+    "U=realized only": 47.8,
+    "F=funding only (U=SMA)": 49.3,
+    "FULL: U=realized + F=funding": 51.2
+  },
+  "phase_dist": {
+    "trending_pct": 18.5
+  },
+  "verdict": {
+    "t1": true,
+    "t2": true,
+    "t3": false
+  }
+}

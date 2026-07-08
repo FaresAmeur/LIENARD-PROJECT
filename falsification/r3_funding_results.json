@@ -1,0 +1,30 @@
+{
+  "window": "2020-01 to 2024-01",
+  "n_weeks": 209,
+  "t1": {
+    "corr": -0.1035,
+    "beta": -47.293,
+    "p_value": 0.254,
+    "ret_after_P90": -0.68,
+    "ret_after_P10": 3.19
+  },
+  "t2": {
+    "sharpe": 0.53,
+    "sharpe_active": 1.19,
+    "win": 52.4,
+    "n_trades": 42,
+    "ret": 63.5,
+    "dd": -53.4
+  },
+  "t3": {
+    "0.0": 46.6,
+    "0.002": 47.6,
+    "0.005": 51.9,
+    "0.01": 44.7
+  },
+  "verdict": {
+    "t1_pass": false,
+    "t2_pass": true,
+    "t3_pass": true
+  }
+}

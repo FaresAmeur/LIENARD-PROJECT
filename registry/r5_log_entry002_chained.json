@@ -1,0 +1,44 @@
+{
+  "protocol": "R5 v2.0 \u2014 hash-chained; rule frozen (z<-0.5\u2192LONG); R10 confirmed MVRV as primary anchor",
+  "prev_entry_sha256": "cee7cea4edbb7d13486b567ad68fa6463cc82a95d4f3aa565c4a53f560af2465",
+  "created_utc": "2026-07-08T18:19:41.006618+00:00",
+  "entries": [
+    {
+      "asset": "BTC",
+      "date": "2026-05-29",
+      "price": 76619.87,
+      "mvrv": 1.415,
+      "z": -0.41,
+      "signal_26w": "FLAT",
+      "eval_due": "2026-11-27"
+    },
+    {
+      "asset": "ETH",
+      "date": "2026-05-29",
+      "price": 2116.17,
+      "mvrv": 0.967,
+      "z": -0.63,
+      "signal_26w": "LONG",
+      "eval_due": "2026-11-27"
+    },
+    {
+      "asset": "LTC",
+      "date": "2026-05-29",
+      "price": 53.44,
+      "mvrv": 0.661,
+      "z": -0.56,
+      "signal_26w": "LONG",
+      "eval_due": "2026-11-27"
+    },
+    {
+      "asset": "XRP",
+      "date": "2026-05-29",
+      "price": 1.36,
+      "mvrv": 0.914,
+      "z": -0.27,
+      "signal_26w": "FLAT",
+      "eval_due": "2026-11-27"
+    }
+  ],
+  "sha256": "b4e2732315efbf3692d1bbd1847e1d31d8132dad860589408ff185166f6a2b0e"
+}

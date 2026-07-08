@@ -1,0 +1,16 @@
+{
+  "SP500": {
+    "n": 486,
+    "naive": 2.0,
+    "adaptive": -1.0,
+    "p_naive": 56.0,
+    "p_adapt": 52.0
+  },
+  "Gold": {
+    "n": 265,
+    "naive": -9.7,
+    "adaptive": -0.8,
+    "p_naive": 36.0,
+    "p_adapt": 60.0
+  }
+}

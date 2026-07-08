@@ -1,0 +1,11 @@
+name: OTS Auto-Stamp Registry
+on: {push: {paths: ['registry/*.json']}}
+permissions: {contents: write}
+jobs:
+  stamp:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: pip install opentimestamps-client
+      - run: for f in registry/*.json; do [ -f "$f.ots" ] || ots stamp "$f"; done
+      - run: git config user.name ots-bot && git add registry/*.ots && git commit -m "[Auto] OTS proofs" && git push
