@@ -28,8 +28,8 @@ BTC, XRP, DOGE **FLAT**. Evaluation due 2026-11-27. Rule frozen: z(MVRV) < −0.
 ## Verify
 `ots verify registry/<entry>.json.ots` — no trust in us required.
 
-## Intégrité
-- 2026-07-09 : les preuves .ots initiales se sont révélées malformées lors d'un audit interne ; régénérées et re-soumises publiquement (voir commit 629e1d1). L'incident est conservé dans l'historique.
+## Integrity
+- 2026-07-09: the initial .ots proofs were found to be malformed during an internal audit; regenerated and re-submitted publicly (see commit 629e1d1). The incident is preserved in the history.
 - Blockchain-proven existence: 2026-07-09; internal creation dates are self-reported.
 
 ## Paper
