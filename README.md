@@ -31,6 +31,7 @@ BTC, XRP, DOGE **FLAT**. Evaluation due 2026-11-27. Rule frozen: z(MVRV) < −0.
 ## Integrity
 - 2026-07-09: the initial .ots proofs were found to be malformed during an internal audit; regenerated and re-submitted publicly (see commit 629e1d1). The incident is preserved in the history.
 - Blockchain-proven existence: 2026-07-09; internal creation dates are self-reported.
+- 2026-07-09: the Coin Metrics community feed has been frozen since 2026-05-23; entry 004 was not created (the protocol forbids entries without a new observation). A freshness guard was added to the update pipeline (`registry/update_registry.py`) to refuse duplicate entries automatically. Entries 001-003 and their 2026-11-27 evaluation are unaffected — only the cadence of new entries is paused until the feed resumes or an alternative source is adopted (to be declared here in advance, never after the fact).
 
 ## Paper
 `paper/lienard_paper_v1_3.pdf` — living document, immutable changelog v1.0→v1.3.
