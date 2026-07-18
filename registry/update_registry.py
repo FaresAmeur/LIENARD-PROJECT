@@ -1,20 +1,32 @@
-"""Génère l'entrée hebdo du registre — règle figée R5 v2.1 (z<-0.5 → LONG)."""
-import pandas as pd, numpy as np, json, hashlib, datetime, glob, os, re, urllib.request
+"""Génère l'entrée hebdo du registre — règle figée R5 v2.1 (z<-0.5 → LONG).
+
+Source de données : Coin Metrics Community API v4 (protocol_amendment_v2_2.json,
+2026-07-18) — remplace le CSV GitHub coinmetrics/data, figé depuis 2026-05-23.
+"""
+import pandas as pd, numpy as np, json, hashlib, datetime, glob, os, re, requests
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 ASSETS = ['btc','eth','ltc','xrp','ada','doge']
+CM_API = "https://community-api.coinmetrics.io/v4/timeseries/asset-metrics"
 
 # 1. Trouver la dernière entrée (pour chaîner) — tri par numéro d'entrée, pas alphabétique
 entries = sorted(glob.glob('r5_*entry*.json'), key=lambda f: int(re.search(r'entry(\d+)', f).group(1)))
 prev = json.load(open(entries[-1]))
 n_next = int(re.search(r'entry(\d+)', entries[-1]).group(1)) + 1
 
-# 2. Télécharger les données Coin Metrics et calculer les signaux
+# 2. Télécharger les données Coin Metrics (API REST) et calculer les signaux
 rows = []
 for a in ASSETS:
-    url = f"https://raw.githubusercontent.com/coinmetrics/data/master/csv/{a}.csv"
-    d = pd.read_csv(url, usecols=['time','CapMVRVCur','PriceUSD']).dropna()
-    d['time'] = pd.to_datetime(d['time'])
+    resp = requests.get(CM_API, params={
+        'assets': a, 'metrics': 'CapMVRVCur,PriceUSD', 'frequency': '1d',
+        'page_size': 10000, 'sort': 'time', 'paging_from': 'start',
+    }, timeout=30)
+    resp.raise_for_status()
+    d = pd.DataFrame(resp.json()['data'])
+    d = d.dropna(subset=['CapMVRVCur', 'PriceUSD'])
+    d['time'] = pd.to_datetime(d['time']).dt.tz_localize(None)
+    d['CapMVRVCur'] = d['CapMVRVCur'].astype(float)
+    d['PriceUSD'] = d['PriceUSD'].astype(float)
     w = d.set_index('time').resample('W-FRI').last().dropna()
     mv = w['CapMVRVCur'].values
     z = (mv[-1]-mv.mean())/mv.std()
