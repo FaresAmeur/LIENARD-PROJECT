@@ -12,9 +12,9 @@ jobs:
   update:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: '3.x'
 
@@ -24,7 +24,8 @@ jobs:
         id: update
         working-directory: registry
         run: |
-          python update_registry.py; echo "exit_code=$?" >> "$GITHUB_OUTPUT"
+          python update_registry.py && echo "exit_code=0" >> "$GITHUB_OUTPUT" \
+            || echo "exit_code=$?" >> "$GITHUB_OUTPUT"
 
       - name: Stamp and push new entry
         if: steps.update.outputs.exit_code == '0'
