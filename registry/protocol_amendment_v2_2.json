@@ -1,0 +1,23 @@
+{
+  "type": "protocol_amendment",
+  "version": "v2.2",
+  "declared_utc": "2026-07-18T10:53:53.701978+00:00",
+  "reason": "The Coin Metrics community GitHub CSV feed (https://raw.githubusercontent.com/coinmetrics/data/master/csv/{asset}.csv) has been frozen since 2026-05-23. Entry 004 could not be generated on 2026-07-09 or 2026-07-18 because the freshness guard in registry/update_registry.py correctly refused to duplicate entry 003's observation date. Incident documented in README > Integrity (2026-07-09).",
+  "old_source": {
+    "channel": "static CSV via GitHub",
+    "url_pattern": "https://raw.githubusercontent.com/coinmetrics/data/master/csv/{asset}.csv",
+    "status": "frozen since 2026-05-23"
+  },
+  "new_source": {
+    "channel": "REST API",
+    "provider": "Coin Metrics Community API v4",
+    "url": "https://community-api.coinmetrics.io/v4/timeseries/asset-metrics",
+    "metrics": [
+      "CapMVRVCur",
+      "PriceUSD"
+    ],
+    "note": "Same provider (Coin Metrics) and same metrics (CapMVRVCur, PriceUSD) as the prior source \u2014 only the delivery channel changes. The frozen rule (z(MVRV) < -0.5 -> LONG, 26-week evaluation) is unaffected."
+  },
+  "effective_from": "entry 004",
+  "sha256": "38fdd6090b7683a4cfb7c52eea466aa0c20f7d4401a72b3080ce2bc471873c81"
+}
