@@ -51,3 +51,7 @@ fname = f'r5_log_entry{n_next:03d}.json'
 json.dump(log, open(fname,'w'), indent=2)
 print(f"\n✅ {fname}  chaîné à {prev['sha256'][:12]}")
 print(f"Ensuite: ots stamp {fname} ; git add/commit/push")
+
+# TODO: générer automatiquement le bloc signaux du README (## Track record)
+# et de site/index.html (<h2>Signaux courants...) à partir de `rows` à chaque
+# entrée, pour que la vitrine ne puisse plus jamais dériver du registre.
