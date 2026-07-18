@@ -1,0 +1,48 @@
+name: Weekly Registry Update
+
+on:
+  schedule:
+    - cron: '0 18 * * 5'   # every Friday, 18:00 UTC
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - run: pip install pandas requests opentimestamps-client
+
+      - name: Run update_registry.py
+        id: update
+        working-directory: registry
+        run: |
+          python update_registry.py; echo "exit_code=$?" >> "$GITHUB_OUTPUT"
+
+      - name: Stamp and push new entry
+        if: steps.update.outputs.exit_code == '0'
+        working-directory: registry
+        run: |
+          NEW=$(git status --porcelain | awk '$1=="??"{print $2}' | grep -E 'r5_log_entry[0-9]+\.json$')
+          if [ -z "$NEW" ]; then
+            echo "update_registry.py exited 0 but no new entry file was found — nothing to commit."
+            exit 0
+          fi
+          ots stamp "$NEW"
+          git config user.name "registry-bot"
+          git config user.email "registry-bot@users.noreply.github.com"
+          git add "$NEW" "$NEW.ots"
+          git commit -m "Registry entry $(basename "$NEW" .json) — $(date -u +%Y-%m-%d)"
+          git push
+
+      - name: No new entry (stale source)
+        if: steps.update.outputs.exit_code != '0'
+        run: |
+          echo "update_registry.py exited ${{ steps.update.outputs.exit_code }} — source stale or no new observation this week. No entry created, no commit."
