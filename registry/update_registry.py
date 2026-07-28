@@ -28,6 +28,11 @@ for a in ASSETS:
     d['CapMVRVCur'] = d['CapMVRVCur'].astype(float)
     d['PriceUSD'] = d['PriceUSD'].astype(float)
     w = d.set_index('time').resample('W-FRI').last().dropna()
+    # Drop any trailing bin whose Friday label is still in the future: on a
+    # non-Friday run, resample('W-FRI') labels the current partial week with
+    # the upcoming Friday, which would emit a future-dated, incomplete entry.
+    today = pd.Timestamp(datetime.datetime.now(datetime.timezone.utc).date())
+    w = w[w.index <= today]
     mv = w['CapMVRVCur'].values
     z = (mv[-1]-mv.mean())/mv.std()
     rows.append({'asset':a.upper(),'date':str(w.index[-1].date()),

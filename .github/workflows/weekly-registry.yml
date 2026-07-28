@@ -29,9 +29,10 @@ jobs:
 
       - name: Stamp and push new entry
         if: steps.update.outputs.exit_code == '0'
-        working-directory: registry
         run: |
-          NEW=$(git status --porcelain | awk '$1=="??"{print $2}' | grep -E 'r5_log_entry[0-9]+\.json$')
+          # Run from the repo root: git status reports paths relative to the
+          # repo root, so ots stamp / git add must resolve them from here too.
+          NEW=$(git status --porcelain | awk '$1=="??"{print $2}' | grep -E 'registry/r5_log_entry[0-9]+\.json$')
           if [ -z "$NEW" ]; then
             echo "update_registry.py exited 0 but no new entry file was found — nothing to commit."
             exit 0
@@ -39,7 +40,9 @@ jobs:
           ots stamp "$NEW"
           git config user.name "registry-bot"
           git config user.email "registry-bot@users.noreply.github.com"
-          git add "$NEW" "$NEW.ots"
+          # Stage the entry, its proof, AND the showcase files that
+          # update_registry.py regenerates, so README/site never drift.
+          git add "$NEW" "$NEW.ots" README.md site/index.html
           git commit -m "Registry entry $(basename "$NEW" .json) — $(date -u +%Y-%m-%d)"
           git push
 
