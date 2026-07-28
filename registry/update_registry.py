@@ -52,6 +52,43 @@ json.dump(log, open(fname,'w'), indent=2)
 print(f"\n✅ {fname}  chaîné à {prev['sha256'][:12]}")
 print(f"Ensuite: ots stamp {fname} ; git add/commit/push")
 
-# TODO: générer automatiquement le bloc signaux du README (## Track record)
-# et de site/index.html (<h2>Signaux courants...) à partir de `rows` à chaque
-# entrée, pour que la vitrine ne puisse plus jamais dériver du registre.
+# 4. Régénérer le bloc signaux du README et de site/index.html à partir de
+#    `rows`, pour que la vitrine ne puisse plus jamais dériver du registre.
+longs = [r['asset'] for r in rows if r['signal_26w'] == 'LONG']
+flats = [r['asset'] for r in rows if r['signal_26w'] == 'FLAT']
+entry_date = rows[0]['date']
+eval_due = rows[0]['eval_due']
+
+readme_path = '../README.md'
+readme = open(readme_path, encoding='utf-8').read()
+track_record = (
+    "## Track record (prospective, tamper-evident)\n"
+    "`registry/` — hash-chained entries (each embeds SHA-256 of predecessor), OpenTimestamps\n"
+    f"automation anchors every entry in Bitcoin. Current (entry {n_next:03d}, {entry_date}): "
+    f"{', '.join(longs)} **LONG**; {', '.join(flats)} **FLAT**.\n"
+    f"Evaluation due {eval_due}. Rule frozen: z(MVRV) < −0.5 → LONG.\n"
+)
+readme_new = re.sub(
+    r"## Track record \(prospective, tamper-evident\)\n.*?\n(?=\n## )",
+    track_record, readme, count=1, flags=re.S,
+)
+assert readme_new != readme, "README anchor '## Track record (prospective, tamper-evident)' not found — showcase NOT updated, fix the regex."
+open(readme_path, 'w', encoding='utf-8').write(readme_new)
+
+site_path = '../site/index.html'
+site = open(site_path, encoding='utf-8').read()
+d = datetime.date.fromisoformat(entry_date)
+ed = datetime.date.fromisoformat(eval_due)
+spans = ' '.join(
+    f'<span class="sig {"long" if r["signal_26w"] == "LONG" else "flat"}">{r["asset"]} {r["signal_26w"]}</span>'
+    for r in rows
+)
+signaux_line = (
+    f'<h2>Signaux courants (entrée {n_next:03d}, {d:%d/%m/%Y}, éval. {ed:%d/%m/%Y})</h2>'
+    f'<p>{spans}</p>'
+)
+site_new = re.sub(r'<h2>Signaux courants.*?</h2><p>.*?</p>', signaux_line, site, count=1, flags=re.S)
+assert site_new != site, "index.html anchor '<h2>Signaux courants...' not found — showcase NOT updated, fix the regex."
+open(site_path, 'w', encoding='utf-8').write(site_new)
+
+print(f"✅ Vitrine régénérée : README.md + site/index.html (entrée {n_next:03d})")
