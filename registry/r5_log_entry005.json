@@ -1,0 +1,62 @@
+{
+  "protocol": "R5 v2.1 \u2014 rule frozen (z<-0.5\u2192LONG)",
+  "prev_entry_sha256": "cc663a77d1ae8add14f239486c8a9a1efa2ca8e7193a27707650ea72e1034036",
+  "created_utc": "2026-07-31T19:39:50.227161+00:00",
+  "entries": [
+    {
+      "asset": "BTC",
+      "date": "2026-07-31",
+      "price": 64827.5702,
+      "mvrv": 1.226,
+      "z": -0.56,
+      "signal_26w": "LONG",
+      "eval_due": "2027-01-29"
+    },
+    {
+      "asset": "ETH",
+      "date": "2026-07-31",
+      "price": 1923.5154,
+      "mvrv": 0.934,
+      "z": -0.68,
+      "signal_26w": "LONG",
+      "eval_due": "2027-01-29"
+    },
+    {
+      "asset": "LTC",
+      "date": "2026-07-31",
+      "price": 45.6446,
+      "mvrv": 0.596,
+      "z": -0.67,
+      "signal_26w": "LONG",
+      "eval_due": "2027-01-29"
+    },
+    {
+      "asset": "XRP",
+      "date": "2026-07-31",
+      "price": 1.085,
+      "mvrv": 0.764,
+      "z": -0.29,
+      "signal_26w": "FLAT",
+      "eval_due": "2027-01-29"
+    },
+    {
+      "asset": "ADA",
+      "date": "2026-07-31",
+      "price": 0.17,
+      "mvrv": 0.459,
+      "z": -0.82,
+      "signal_26w": "LONG",
+      "eval_due": "2027-01-29"
+    },
+    {
+      "asset": "DOGE",
+      "date": "2026-07-31",
+      "price": 0.0706,
+      "mvrv": 0.591,
+      "z": -0.67,
+      "signal_26w": "LONG",
+      "eval_due": "2027-01-29"
+    }
+  ],
+  "sha256": "2d8c91ad9abf6e889102aa120e54a291f0f5387409dbadfa15b0bc66ef34531c"
+}
