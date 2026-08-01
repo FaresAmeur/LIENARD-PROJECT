@@ -1,0 +1,45 @@
+name: Upgrade OTS Proofs
+
+on:
+  schedule:
+    - cron: '0 12 * * *'   # daily, 12:00 UTC
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  upgrade:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.x'
+
+      - run: pip install opentimestamps-client
+
+      - name: Upgrade pending proofs
+        run: |
+          # ots upgrade rewrites a .ots in place once the calendar has a
+          # Bitcoin attestation ready; it's a no-op for proofs that are
+          # already complete or still pending. Ignore its exit status so a
+          # still-pending proof (or an expired calendar cert) can't fail the job.
+          for f in registry/*.json.ots; do
+            ots upgrade "$f" || true
+          done
+
+      - name: Commit upgraded proofs
+        run: |
+          git config user.name "ots-bot"
+          git config user.email "ots-bot@users.noreply.github.com"
+          # *.json.ots only — the *.ots.bak backups ots upgrade leaves behind
+          # don't match this glob (and are .gitignored anyway).
+          git add registry/*.json.ots
+          if git diff --staged --quiet; then
+            echo "No proofs upgraded — nothing to commit."
+          else
+            git commit -m "[Auto] Upgrade OTS proofs to confirmed Bitcoin anchor — $(date -u +%Y-%m-%d)"
+            git push
+          fi
