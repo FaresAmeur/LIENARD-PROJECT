@@ -11,8 +11,8 @@ false. Our answer: frozen specs, negative results published, prospective registr
 
 ## Track record (prospective, tamper-evident)
 `registry/` — hash-chained entries (each embeds SHA-256 of predecessor), OpenTimestamps
-automation anchors every entry in Bitcoin. Current (entry 013, 2026-09-25):  **LONG**; BTC, ETH, LTC, XRP, ADA, DOGE **FLAT**.
-Evaluation due 2027-03-26. Rule frozen: z(MVRV) < −0.5 → LONG.
+automation anchors every entry in Bitcoin. Current (entry 014, 2026-10-02):  **LONG**; BTC, ETH, LTC, XRP, ADA, DOGE **FLAT**.
+Evaluation due 2027-04-02. Rule frozen: z(MVRV) < −0.5 → LONG.
 
 ## Falsification ledger (R1–R11)
 | Test | Verdict | Finding |
