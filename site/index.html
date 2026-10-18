@@ -1,7 +1,25 @@
-<!doctype html><html><head><meta charset="utf-8"><title>Liénard Registry</title>
-<style>body{font-family:system-ui;max-width:720px;margin:40px auto;padding:0 16px;background:#0f172a;color:#e2e8f0;line-height:1.7}h1{color:#f7931a}a{color:#06b6d4}.sig{font-family:monospace;background:#1e293b;padding:2px 8px;border-radius:4px}.long{color:#22c55e}.flat{color:#64748b}</style></head><body>
+<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Liénard Registry</title>
+<style>body{font-family:system-ui;max-width:720px;margin:40px auto;padding:0 16px;background:#0f172a;color:#e2e8f0;line-height:1.7}h1{color:#f7931a}a{color:#06b6d4}.sig{font-family:monospace;background:#1e293b;padding:2px 8px;border-radius:4px}.long{color:#22c55e}.flat{color:#64748b}.tbl{overflow-x:auto}table{border-collapse:collapse;width:100%;font-size:.92em}th,td{border-bottom:1px solid #334155;padding:6px 8px;text-align:right;white-space:nowrap}th:first-child,td:first-child,th:nth-child(2),td:nth-child(2){text-align:left}.note,.legal{color:#94a3b8;font-size:.85em}.signup{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}.signup input[type=email]{flex:1 1 220px;padding:8px 10px;border-radius:6px;border:1px solid #334155;background:#1e293b;color:#e2e8f0}.signup button{padding:8px 14px;border-radius:6px;border:0;background:#f7931a;color:#0f172a;font-weight:600;cursor:pointer}.signup button:disabled{background:#475569;color:#cbd5e1;cursor:not-allowed}.consent{flex-basis:100%;font-size:.85em;color:#94a3b8}</style></head><body>
 <h1>◉ Liénard Registry</h1><p><b>La seule plateforme de signaux qui publie ses échecs</b> — 11 vagues de falsification, registre chaîné SHA-256, preuves OpenTimestamps sur Bitcoin.</p>
 <h2>Signaux courants (entrée 016, 16/10/2026, éval. 16/04/2027)</h2><p><span class="sig flat">BTC FLAT</span> <span class="sig flat">ETH FLAT</span> <span class="sig flat">LTC FLAT</span> <span class="sig flat">XRP FLAT</span> <span class="sig long">ADA LONG</span> <span class="sig long">DOGE LONG</span></p>
 <p>Règle figée : z(MVRV) &lt; −0.5 → LONG 26 semaines.</p>
+<!-- VERDICTS:START -->
+<h2 id="verdicts">Verdicts à 26 semaines</h2>
+<p>Aucun verdict pour l’instant. Chaque verdict est calculé automatiquement à son échéance, publié qu’il soit bon ou mauvais, et ancré sur Bitcoin.</p>
+<p>Prochaines échéances : 27/11/2026 (entrées 001, 002, 003); 15/01/2027 (entrée 004); 29/01/2027 (entrée 005).</p>
+<p class="note">Méthode figée par l’amendement v2.3, déclaré avant le premier verdict : prix publié dans l’entrée → prix Coin Metrics le jour de l’échéance, paniers équipondérés, rendements bruts, aucun seuil de réussite. Les entrées 001 et 002 sont des sous-ensembles de 003 (même observation du 29/05/2026).</p>
+<!-- VERDICTS:END -->
+<h2 id="inscription">Recevoir chaque verdict</h2>
+<p>Un e-mail par verdict publié, gagnant ou perdant, et rien d’autre. Gratuit.</p>
+<!-- Formulaire désactivé tant que le fournisseur d'e-mails n'est pas configuré :
+     remplacer __BUTTONDOWN_USERNAME__ par l'identifiant Buttondown, puis retirer `disabled`. -->
+<form class="signup" action="https://buttondown.com/api/emails/embed-subscribe/__BUTTONDOWN_USERNAME__" method="post" target="_blank">
+<input type="email" name="email" required placeholder="vous@exemple.fr" aria-label="Adresse e-mail">
+<button type="submit" disabled>Inscriptions ouvertes avant le 27/11</button>
+<label class="consent"><input type="checkbox" required> J’accepte de recevoir ces e-mails. Adresse utilisée uniquement pour cet envoi, jamais revendue ; désinscription en un clic.</label>
+</form>
 <h2>Intégrité</h2><p>27–53% des anomalies publiées sont probablement fausses (Harvey et al., RFS 2016). Notre réponse : specs figées, résultats négatifs publiés (R1, R10, R11), registre vérifiable : <code>ots verify</code>.</p>
-<p><a href="../paper/lienard_paper_v1_3.pdf">📄 Papier v1.3</a></p></body></html>
+<p><a href="../paper/lienard_paper_v1_3.pdf">📄 Papier v1.3</a></p>
+<p class="legal">Information générale à caractère éducatif, non personnalisée : ce n’est pas un conseil en investissement. Les performances passées ne préjugent pas des performances futures. Les crypto-actifs sont très volatils et peuvent perdre tout ou partie de leur valeur.</p>
+<p class="legal">Données : <a href="https://docs.coinmetrics.io/packages/coin-metrics-community-data">Coin Metrics Community Data</a>, licence <a href="https://creativecommons.org/licenses/by-nc/4.0/">CC BY-NC 4.0</a> (usage non commercial).</p>
+</body></html>

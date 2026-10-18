@@ -1,0 +1,56 @@
+name: Evaluate Verdicts
+
+on:
+  schedule:
+    - cron: '0 6 * * *'   # daily, 06:00 UTC
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  evaluate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.x'
+
+      - run: pip install requests opentimestamps-client
+
+      # Writes every verdict whose exit price is published, then regenerates the
+      # README/site verdict blocks. Exit 0 = ok, 3 = a verdict is more than 7 days
+      # overdue (what was computed still gets committed below); anything else is a
+      # crash and stops the job here.
+      - name: Compute due verdicts
+        id: eval
+        run: |
+          python registry/evaluate_verdicts.py && code=0 || code=$?
+          echo "code=$code" >> "$GITHUB_OUTPUT"
+          [ "$code" = 0 ] || [ "$code" = 3 ]
+
+      - name: Stamp, commit and push
+        run: |
+          for f in $(git status --porcelain | awk '$1=="??"{print $2}' | grep -E '^registry/verdict_entry[0-9]+\.json$'); do
+            ots stamp "$f"
+          done
+          git config user.name "verdict-bot"
+          git config user.email "verdict-bot@users.noreply.github.com"
+          git add README.md site/index.html
+          if ls registry/verdict_entry*.json >/dev/null 2>&1; then
+            git add registry/verdict_entry*.json registry/verdict_entry*.json.ots
+          fi
+          if git diff --staged --quiet; then
+            echo "No new verdict and no showcase change — nothing to commit."
+          else
+            git commit -m "[Auto] Verdicts — $(date -u +%Y-%m-%d)"
+            git push
+          fi
+
+      - name: Flag overdue verdicts
+        if: steps.eval.outputs.code == '3'
+        run: |
+          echo "::error::A verdict is more than 7 days overdue: the Coin Metrics exit price is missing. Check the data source."
+          exit 1

@@ -14,6 +14,15 @@ false. Our answer: frozen specs, negative results published, prospective registr
 automation anchors every entry in Bitcoin. Current (entry 016, 2026-10-16): ADA, DOGE **LONG**; BTC, ETH, LTC, XRP **FLAT**.
 Evaluation due 2027-04-16. Rule frozen: z(MVRV) < −0.5 → LONG.
 
+## Verdicts (26-week)
+<!-- VERDICTS:START -->
+No verdict yet. Each one is computed automatically at its due date, published whatever the outcome, and anchored in Bitcoin.
+
+Next due: 2026-11-27 (entries 001, 002, 003); 2027-01-15 (entry 004); 2027-01-29 (entry 005).
+
+Method fixed by protocol amendment v2.3 (`registry/protocol_amendment_v2_3.json`), declared before the first verdict: published entry price → Coin Metrics price on the due date, equal-weight baskets, gross returns, no success threshold. Entries 001 and 002 are subsets of 003 (same observation).
+<!-- VERDICTS:END -->
+
 ## Falsification ledger (R1–R11)
 | Test | Verdict | Finding |
 |---|---|---|
@@ -35,6 +44,9 @@ Evaluation due 2027-04-16. Rule frozen: z(MVRV) < −0.5 → LONG.
 - Blockchain-proven existence: 2026-07-09; internal creation dates are self-reported.
 - 2026-07-09: the Coin Metrics community feed has been frozen since 2026-05-23; entry 004 was not created (the protocol forbids entries without a new observation). A freshness guard was added to the update pipeline (`registry/update_registry.py`) to refuse duplicate entries automatically. Entries 001-003 and their 2026-11-27 evaluation are unaffected — only the cadence of new entries is paused until the feed resumes or an alternative source is adopted (to be declared here in advance, never after the fact). Resolved 2026-07-18: protocol amendment v2.2 (declared and stamped before use) switched to the Coin Metrics community REST API; entry 004 resumed the cadence.
 - 2026-07-24: the first live scheduled run of the weekly pipeline failed. `update_registry.py` generated entry 005 correctly, but the workflow's stamp-and-push step crashed on a path bug (a repo-root-relative path from `git status` was resolved against a subdirectory working directory), so the entry was never committed. Consistent with the 2026-07-09 precedent, we do not reconstruct entries after the fact: no entry exists for the week of 2026-07-24, the gap is left on the record, and the cadence resumes at entry 005 (week of 2026-07-31). The workflow was fixed the same day, and a separate future-dating guard was added to the pipeline so an off-schedule run can no longer emit an entry labelled with an upcoming Friday.
+
+## Data & license
+Market and on-chain data: [Coin Metrics Community Data](https://docs.coinmetrics.io/packages/coin-metrics-community-data), licensed [CC BY-NC 4.0](https://creativecommons.org/licenses/by-nc/4.0/) (non-commercial use only). This registry is published free of charge, for non-commercial research.
 
 ## Paper
 `paper/lienard_paper_v1_3.pdf` — living document, immutable changelog v1.0→v1.3.
