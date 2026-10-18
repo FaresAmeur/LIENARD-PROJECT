@@ -116,7 +116,8 @@ def evaluate(registry_dir=REGISTRY, fetch=fetch_price, today=None):
                 overdue.append(n)
             continue
         verdict = build_verdict(path, entry, due, prices)
-        with open(out, 'w', encoding='utf-8') as f:
+        # newline='\n' : le verdict est horodaté octet par octet, il doit être identique sur tout OS.
+        with open(out, 'w', encoding='utf-8', newline='\n') as f:
             json.dump(verdict, f, indent=2)
         s = verdict['summary']
         print(f"  ✅ verdict entrée {n:03d} : LONG {s['long_mean']} | FLAT {s['flat_mean']} | univers {s['universe_mean']}")

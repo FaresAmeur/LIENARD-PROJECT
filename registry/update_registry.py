@@ -53,7 +53,8 @@ log = {'protocol':'R5 v2.1 — rule frozen (z<-0.5→LONG)',
        'entries': rows}
 log['sha256'] = hashlib.sha256(json.dumps(log,sort_keys=True).encode()).hexdigest()
 fname = f'r5_log_entry{n_next:03d}.json'
-json.dump(log, open(fname,'w'), indent=2)
+# newline='\n' : le fichier est horodaté octet par octet, il doit être identique sur tout OS.
+json.dump(log, open(fname, 'w', newline='\n'), indent=2)
 print(f"\n✅ {fname}  chaîné à {prev['sha256'][:12]}")
 print(f"Ensuite: ots stamp {fname} ; git add/commit/push")
 
