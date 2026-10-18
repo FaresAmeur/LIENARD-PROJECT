@@ -1,0 +1,29 @@
+{
+  "type": "protocol_amendment",
+  "version": "v2.3",
+  "declared_utc": "2026-10-18T23:46:50.593839+00:00",
+  "scope": "Evaluation methodology for R5 registry entries: how each 26-week verdict is computed and published. The signal rule (z(MVRV) < -0.5 -> LONG 26 weeks, else FLAT) and the data source (amendment v2.2) are unchanged.",
+  "first_use": "2026-11-27 (eval_due of entries 001-003)",
+  "disclosure": "No success criterion was pre-registered in the R5 protocol (paper v1.3: results reported regardless of outcome). This amendment is declared after interim prices for entries 001-016 were publicly observable. To leave no room for a favourable choice, it fixes only mechanical definitions and deliberately sets NO pass/fail threshold: verdicts are reported as numbers.",
+  "method": {
+    "entry_price": "the 'price' field recorded in the entry as published (never recomputed)",
+    "exit_price": "Coin Metrics Community API v4, metric PriceUSD, frequency=1d, the value dated exactly eval_due",
+    "trigger": "a verdict is computed as soon as the exit price is available for every asset of the entry; until then the entry is pending",
+    "asset_return": "exit_price / entry_price - 1",
+    "baskets": "equal-weight arithmetic mean of asset returns: LONG basket, FLAT basket, universe (all assets of the entry)",
+    "reported_metrics": [
+      "per-asset signal and return",
+      "LONG basket mean",
+      "FLAT basket mean",
+      "universe mean",
+      "LONG minus universe (pp)",
+      "LONG minus FLAT (pp)",
+      "LONG hit rate (share of LONG assets with return > 0)"
+    ],
+    "empty_basket": "if an entry has no LONG (or no FLAT) asset, the metrics that need it are reported as null, with no substitute",
+    "costs": "returns are gross: no fees, slippage or funding",
+    "independence": "entries 001 and 002 are subsets of entry 003 (same 2026-05-29 observation). They are evaluated separately because they are separate registry records, but they count as one observation."
+  },
+  "publication": "each verdict is written to registry/verdict_entryNNN.json, embeds the evaluated entry's sha256, carries its own sha256, and is timestamped with OpenTimestamps like registry entries. Verdicts are published whatever the outcome.",
+  "sha256": "ecbab379d369a43f7485c25695eb9cf0319ae69cda59a17654db9b3ce2107054"
+}
