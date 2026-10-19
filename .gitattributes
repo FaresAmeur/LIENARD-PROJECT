@@ -2,3 +2,4 @@
 # line endings on checkout, or OpenTimestamps verification breaks on other OSes.
 registry/*.json -text
 *.ots binary
+registry/inputs/** binary

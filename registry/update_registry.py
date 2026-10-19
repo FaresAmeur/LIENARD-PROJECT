@@ -3,7 +3,7 @@
 Source de données : Coin Metrics Community API v4 (protocol_amendment_v2_2.json,
 2026-07-18) — remplace le CSV GitHub coinmetrics/data, figé depuis 2026-05-23.
 """
-import pandas as pd, numpy as np, json, hashlib, datetime, glob, os, re, requests
+import pandas as pd, numpy as np, json, hashlib, datetime, glob, gzip, os, re, requests
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 ASSETS = ['btc','eth','ltc','xrp','ada','doge']
@@ -15,7 +15,7 @@ prev = json.load(open(entries[-1]))
 n_next = int(re.search(r'entry(\d+)', entries[-1]).group(1)) + 1
 
 # 2. Télécharger les données Coin Metrics (API REST) et calculer les signaux
-rows = []
+rows, inputs = [], []
 for a in ASSETS:
     resp = requests.get(CM_API, params={
         'assets': a, 'metrics': 'CapMVRVCur,PriceUSD', 'frequency': '1d',
@@ -35,10 +35,15 @@ for a in ASSETS:
     w = w[w.index <= today]
     mv = w['CapMVRVCur'].values
     z = (mv[-1]-mv.mean())/mv.std()
+    # La semaine est étiquetée par son vendredi, mais la dernière valeur est celle
+    # du dernier jour publié (souvent le jeudi) : on enregistre la vraie date.
+    data_through = d.loc[d['time'] <= w.index[-1], 'time'].max()
     rows.append({'asset':a.upper(),'date':str(w.index[-1].date()),
+        'data_through':str(data_through.date()),
         'price':round(float(w['PriceUSD'].iloc[-1]),4),'mvrv':round(float(mv[-1]),3),
         'z':round(float(z),2),'signal_26w':'LONG' if z<-0.5 else 'FLAT',
         'eval_due':str((w.index[-1]+pd.Timedelta(weeks=26)).date())})
+    inputs.append(w[['CapMVRVCur', 'PriceUSD']].assign(asset=a.upper()))
     print(f"  {a.upper():5s} z={z:+.2f} → {rows[-1]['signal_26w']}")
 
 # 2b. Garde-fou de fraîcheur — refuse un doublon si la source n'a pas bougé
@@ -46,10 +51,26 @@ if rows[0]['date'] == prev['entries'][0]['date']:
     raise SystemExit(f"⛔ Source stale: dernière donnée = {rows[0]['date']}, "
                      f"identique à l'entrée précédente. Aucune entrée créée.")
 
+# 2c. Archiver les séries hebdo exactes d'où sortent les z-scores, pour que chaque
+#     entrée reste recalculable même si Coin Metrics révise ses données. Le hash
+#     porte sur le CSV décompressé (indépendant de l'outil de compression) et entre
+#     dans l'entrée, donc dans la chaîne et dans la preuve Bitcoin.
+#     z = (dernière valeur − moyenne) / écart-type (population) de CapMVRVCur par actif.
+inputs_csv = (pd.concat(inputs).rename_axis('week_ending').reset_index()
+              [['asset', 'week_ending', 'CapMVRVCur', 'PriceUSD']]
+              .to_csv(index=False, lineterminator='\n', float_format='%.17g', date_format='%Y-%m-%d')
+              .encode())
+inputs_file = f'inputs/r5_log_entry{n_next:03d}_inputs.csv.gz'
+os.makedirs('inputs', exist_ok=True)
+with open(inputs_file, 'wb') as f, gzip.GzipFile(filename='', fileobj=f, mode='wb', mtime=0) as g:
+    g.write(inputs_csv)
+
 # 3. Chaîner, hasher, écrire
 log = {'protocol':'R5 v2.1 — rule frozen (z<-0.5→LONG)',
        'prev_entry_sha256': prev['sha256'],
        'created_utc': datetime.datetime.now(datetime.timezone.utc).isoformat(),
+       'inputs_file': 'registry/' + inputs_file,
+       'inputs_sha256': hashlib.sha256(inputs_csv).hexdigest(),
        'entries': rows}
 log['sha256'] = hashlib.sha256(json.dumps(log,sort_keys=True).encode()).hexdigest()
 fname = f'r5_log_entry{n_next:03d}.json'
@@ -74,11 +95,13 @@ track_record = (
     f"{', '.join(longs)} **LONG**; {', '.join(flats)} **FLAT**.\n"
     f"Evaluation due {eval_due}. Rule frozen: z(MVRV) < −0.5 → LONG.\n"
 )
-readme_new = re.sub(
+# On vérifie que l'ancre a été trouvée (n == 1), pas que le texte a changé :
+# un bloc régénéré identique à l'existant est un cas normal, pas une erreur.
+readme_new, n = re.subn(
     r"## Track record \(prospective, tamper-evident\)\n.*?\n(?=\n## )",
-    track_record, readme, count=1, flags=re.S,
+    lambda m: track_record, readme, count=1, flags=re.S,
 )
-assert readme_new != readme, "README anchor '## Track record (prospective, tamper-evident)' not found — showcase NOT updated, fix the regex."
+assert n == 1, "README anchor '## Track record (prospective, tamper-evident)' not found — showcase NOT updated, fix the regex."
 open(readme_path, 'w', encoding='utf-8').write(readme_new)
 
 site_path = '../site/index.html'
@@ -93,8 +116,8 @@ signaux_line = (
     f'<h2>Signaux courants (entrée {n_next:03d}, {d:%d/%m/%Y}, éval. {ed:%d/%m/%Y})</h2>'
     f'<p>{spans}</p>'
 )
-site_new = re.sub(r'<h2>Signaux courants.*?</h2><p>.*?</p>', signaux_line, site, count=1, flags=re.S)
-assert site_new != site, "index.html anchor '<h2>Signaux courants...' not found — showcase NOT updated, fix the regex."
+site_new, n = re.subn(r'<h2>Signaux courants.*?</h2><p>.*?</p>', lambda m: signaux_line, site, count=1, flags=re.S)
+assert n == 1, "index.html anchor '<h2>Signaux courants...' not found — showcase NOT updated, fix the regex."
 open(site_path, 'w', encoding='utf-8').write(site_new)
 
 print(f"✅ Vitrine régénérée : README.md + site/index.html (entrée {n_next:03d})")

@@ -42,7 +42,7 @@ jobs:
           git config user.email "registry-bot@users.noreply.github.com"
           # Stage the entry, its proof, AND the showcase files that
           # update_registry.py regenerates, so README/site never drift.
-          git add "$NEW" "$NEW.ots" README.md site/index.html
+          git add "$NEW" "$NEW.ots" README.md site/index.html registry/inputs/
           git commit -m "Registry entry $(basename "$NEW" .json) — $(date -u +%Y-%m-%d)"
           git push
 
