@@ -1,0 +1,70 @@
+{
+  "protocol": "R5 v2.1 \u2014 rule frozen (z<-0.5\u2192LONG)",
+  "prev_entry_sha256": "9cb6567f9efd4e90d727701bba740f7be17a7dc1a5275520429deca3cf3f0996",
+  "created_utc": "2026-10-23T21:11:40.580196+00:00",
+  "inputs_file": "registry/inputs/r5_log_entry017_inputs.csv.gz",
+  "inputs_sha256": "dddcbaad37bca3db783554b56e617811329f433c840ab05b09003cbce431918a",
+  "entries": [
+    {
+      "asset": "BTC",
+      "date": "2026-10-23",
+      "data_through": "2026-10-22",
+      "price": 81257.0176,
+      "mvrv": 1.503,
+      "z": -0.33,
+      "signal_26w": "FLAT",
+      "eval_due": "2027-04-23"
+    },
+    {
+      "asset": "ETH",
+      "date": "2026-10-23",
+      "data_through": "2026-10-22",
+      "price": 2382.6454,
+      "mvrv": 1.053,
+      "z": -0.47,
+      "signal_26w": "FLAT",
+      "eval_due": "2027-04-23"
+    },
+    {
+      "asset": "LTC",
+      "date": "2026-10-23",
+      "data_through": "2026-10-22",
+      "price": 58.6628,
+      "mvrv": 0.765,
+      "z": -0.34,
+      "signal_26w": "FLAT",
+      "eval_due": "2027-04-23"
+    },
+    {
+      "asset": "XRP",
+      "date": "2026-10-23",
+      "data_through": "2026-10-22",
+      "price": 1.3063,
+      "mvrv": 0.881,
+      "z": -0.27,
+      "signal_26w": "FLAT",
+      "eval_due": "2027-04-23"
+    },
+    {
+      "asset": "ADA",
+      "date": "2026-10-23",
+      "data_through": "2026-10-22",
+      "price": 0.2117,
+      "mvrv": 0.581,
+      "z": -0.6,
+      "signal_26w": "LONG",
+      "eval_due": "2027-04-23"
+    },
+    {
+      "asset": "DOGE",
+      "date": "2026-10-23",
+      "data_through": "2026-10-22",
+      "price": 0.0786,
+      "mvrv": 0.674,
+      "z": -0.55,
+      "signal_26w": "LONG",
+      "eval_due": "2027-04-23"
+    }
+  ],
+  "sha256": "4ac23fe3126d8795b775a6bd1209108f7ea76b74e01ad5b10c6525ad707620ea"
+}

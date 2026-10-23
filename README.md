@@ -12,8 +12,8 @@ whose entries are timestamped in Bitcoin as they are made.
 
 ## Track record (prospective, tamper-evident)
 `registry/` — hash-chained entries (each embeds SHA-256 of predecessor), OpenTimestamps
-automation anchors every entry in Bitcoin. Current (entry 016, 2026-10-16): ADA, DOGE **LONG**; BTC, ETH, LTC, XRP **FLAT**.
-Evaluation due 2027-04-16. Rule frozen: z(MVRV) < −0.5 → LONG.
+automation anchors every entry in Bitcoin. Current (entry 017, 2026-10-23): ADA, DOGE **LONG**; BTC, ETH, LTC, XRP **FLAT**.
+Evaluation due 2027-04-23. Rule frozen: z(MVRV) < −0.5 → LONG.
 
 ## Verdicts (26-week)
 <!-- VERDICTS:START -->
